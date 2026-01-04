@@ -1,18 +1,77 @@
+import classNames from 'classnames';
+import { Link, useSearchParams } from 'react-router-dom';
+
+type Param = string | number;
+type Params = {
+  [key: string]: Param[] | Param | null;
+};
+
+const CENTURIES = ['16', '17', '18', '19', '20'];
+
+function getSearchWith(params: Params, search?: string | URLSearchParams) {
+  const newParams = new URLSearchParams(search);
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value === null) {
+      newParams.delete(key);
+    } else if (Array.isArray(value)) {
+      newParams.delete(key);
+      value.forEach(item => newParams.append(key, item.toString()));
+    } else {
+      newParams.set(key, value.toString());
+    }
+  }
+
+  return newParams.toString();
+}
+
 export const PeopleFilters = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const query = searchParams.get('query') || '';
+  const sex = searchParams.get('sex') || null;
+  const centuries = searchParams.getAll('centuries');
+
+  function setSearchWith(params: Params) {
+    const search = getSearchWith(params, searchParams);
+
+    setSearchParams(search);
+  }
+
+  function handleQueryChange(event: React.ChangeEvent<HTMLInputElement>) {
+    setSearchWith({ query: event.target.value || null });
+  }
+
+  function getNextCenturies(clicked: string) {
+    if (centuries.includes(clicked)) {
+      return centuries.filter(с => с !== clicked);
+    } else {
+      return [...centuries, clicked];
+    }
+  }
+
   return (
     <nav className="panel">
       <p className="panel-heading">Filters</p>
 
       <p className="panel-tabs" data-cy="SexFilter">
-        <a className="is-active" href="#/people">
+        <Link
+          className={sex === null ? 'is-active' : ''}
+          to={{ search: getSearchWith({ sex: null }, searchParams) }}
+        >
           All
-        </a>
-        <a className="" href="#/people?sex=m">
+        </Link>
+        <Link
+          className={sex === 'm' ? 'is-active' : ''}
+          to={{ search: getSearchWith({ sex: 'm' }, searchParams) }}
+        >
           Male
-        </a>
-        <a className="" href="#/people?sex=f">
+        </Link>
+        <Link
+          className={sex === 'f' ? 'is-active' : ''}
+          to={{ search: getSearchWith({ sex: 'f' }, searchParams) }}
+        >
           Female
-        </a>
+        </Link>
       </p>
 
       <div className="panel-block">
@@ -22,6 +81,8 @@ export const PeopleFilters = () => {
             type="search"
             className="input"
             placeholder="Search"
+            value={query}
+            onChange={handleQueryChange}
           />
 
           <span className="icon is-left">
@@ -33,7 +94,7 @@ export const PeopleFilters = () => {
       <div className="panel-block">
         <div className="level is-flex-grow-1 is-mobile" data-cy="CenturyFilter">
           <div className="level-left">
-            <a
+            {/*} <a
               data-cy="century"
               className="button mr-1"
               href="#/people?centuries=16"
@@ -71,25 +132,45 @@ export const PeopleFilters = () => {
               href="#/people?centuries=20"
             >
               20
-            </a>
+            </a>*/}
+            {CENTURIES.map(century => (
+              <Link
+                key={century}
+                data-cy="century"
+                className={classNames('button mr-1', {
+                  'is-info': centuries.includes(century),
+                })}
+                to={{
+                  search: getSearchWith(
+                    { centuries: getNextCenturies(century) },
+                    searchParams,
+                  ),
+                }}
+              >
+                {century}
+              </Link>
+            ))}
           </div>
 
           <div className="level-right ml-4">
-            <a
+            <Link
               data-cy="centuryALL"
               className="button is-success is-outlined"
-              href="#/people"
+              to={{ search: getSearchWith({ centuries: null }, searchParams) }}
             >
               All
-            </a>
+            </Link>
           </div>
         </div>
       </div>
 
       <div className="panel-block">
-        <a className="button is-link is-outlined is-fullwidth" href="#/people">
+        <Link
+          className="button is-link is-outlined is-fullwidth"
+          to={{ search: '' }}
+        >
           Reset all filters
-        </a>
+        </Link>
       </div>
     </nav>
   );
