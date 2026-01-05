@@ -15,6 +15,8 @@ export const PeoplePage = () => {
   const query = searchParams.get('query') || '';
   const sex = searchParams.get('sex');
   const centuries = searchParams.getAll('centuries');
+  const sort = searchParams.get('sort');
+  const order = searchParams.get('order');
 
   useEffect(() => {
     setIsLoading(true);
@@ -60,8 +62,50 @@ export const PeoplePage = () => {
       });
     }
 
+    if (sort) {
+      result.sort((a, b) => {
+        let valueA: string | number;
+        let valueB: string | number;
+
+        switch (sort) {
+          case 'name':
+            valueA = a.name;
+            valueB = b.name;
+            break;
+
+          case 'sex':
+            valueA = a.sex;
+            valueB = b.sex;
+            break;
+
+          case 'born':
+            valueA = a.born;
+            valueB = b.born;
+            break;
+
+          case 'died':
+            valueA = a.died ?? Infinity;
+            valueB = b.died ?? Infinity;
+            break;
+
+          default:
+            return 0;
+        }
+
+        let compareResult = 0;
+
+        if (typeof valueA === 'string' && typeof valueB === 'string') {
+          compareResult = valueA.localeCompare(valueB);
+        } else {
+          compareResult = Number(valueA) - Number(valueB);
+        }
+
+        return order === 'desc' ? -compareResult : compareResult;
+      });
+    }
+
     return result;
-  }, [people, query, sex, centuries]);
+  }, [people, query, sex, centuries, sort, order]);
 
   const showNoMatchingMessage =
     !isLoading && !hasError && people.length > 0 && filteredPeople.length === 0;
